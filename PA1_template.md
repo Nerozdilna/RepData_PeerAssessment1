@@ -1,6 +1,5 @@
-=========================================
-Reproducible research assignment (Week 2)
-=========================================
+## Reproducible research assignment (Week 2)
+
 
 ### Download and unzip file
 
@@ -54,7 +53,7 @@ head(data_stepsummary)
 ```
 
 ```
-## # A tibble: 6 × 4
+## # A tibble: 6 Ã— 4
 ##         date total_steps stepmeans stepmedians
 ##       <fctr>       <int>     <dbl>       <dbl>
 ## 1 2012-10-01          NA        NA          NA
@@ -104,7 +103,7 @@ max
 ```
 
 ```
-## # A tibble: 1 × 2
+## # A tibble: 1 Ã— 2
 ##   interval mean_steps
 ##      <int>      <dbl>
 ## 1      835   206.1698
@@ -166,7 +165,7 @@ head(data_stepsummary_no_NA)
 ```
 
 ```
-## # A tibble: 6 × 4
+## # A tibble: 6 Ã— 4
 ##         date total_steps stepmeans stepmedians
 ##       <fctr>       <dbl>     <dbl>       <dbl>
 ## 1 2012-10-01    10766.19  37.38260    34.11321
