@@ -1,25 +1,101 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+## Reproducible research assignment (Week 2)
 
+### Download and unzip file
 
-## Loading and preprocessing the data
+```{r , echo=TRUE}
+dataURL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+file <- "Coursera_5_2.zip"
+if (!file.exists(file)) {download.file(dataURL, file)}
+unzip(zipfile = file, exdir = ".")
+```
 
+### Read datatable
 
+```{r, echo = TRUE}
+data <- read.csv("activity.csv")
+head(data)
+summary(data)
+```
 
-## What is mean total number of steps taken per day?
+### Calculating total/mean/median number of steps taken per day and making a histogram for total values
 
+```{r, echo=TRUE}
+data_stepsummary <- dplyr::summarise(dplyr::group_by(data, date), total_steps = sum(steps), stepmeans = mean(steps), stepmedians = median(steps))
+head(data_stepsummary)
+```
 
+#### We have to note here that while stepmedian values look odd ("0s" where data is available") this is actually corrent. During majority of 5-minute intervals of the day a person collecting data did not make any steps. Also, stepmean values are for 5-minute intervals. If they get multiplied by 288, we will have daily totals.  
 
-## What is the average daily activity pattern?
+```{r, echo=TRUE}
+hist(data_stepsummary$total_steps)
+```
 
+### Here is time series plot of the average number of steps taken
 
+```{r, echo=TRUE}
+library(ggplot2)
+ggplot(subset(data_stepsummary, !is.na(stepmeans)), aes(as.Date(date), stepmeans)) + geom_point() + labs(title = "Average number of steps taken per day") + theme(plot.title = element_text(hjust = 0.5)) + labs(y = "") + labs(x = "") + scale_x_date(date_breaks = "1 week", date_labels = "%b %d")
+```
 
-## Imputing missing values
+### Here is time series plot of average 5-minute interval steps taken
 
+```{r, echo=TRUE}
+data_intervalsummary <- dplyr::summarise(dplyr::group_by(data, interval), mean_steps = mean(steps, na.rm = TRUE))
+library(ggplot2)
+ggplot(data_intervalsummary, aes(interval, mean_steps)) + geom_line() + labs(title = "Average # of steps taken during specific 5-minute interval") + theme(plot.title = element_text(hjust = 0.5)) + labs(y = "") + labs(x = "Hour of the day (500 = 5:00am)")
+```
 
+### What is the time interval for maximum number of steps?
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r, echo=TRUE}
+max <- subset(data_intervalsummary, mean_steps == max(mean_steps))
+max
+```
+
+##### This 5-minute interval starts at 8:35 am and an average daily amount of steps is above 206
+
+### Total number of missing values in dataset.
+
+```{r, echo=TRUE}
+sum(is.na(data))
+sum(is.na(data$steps))
+```
+
+### All missing values are in "steps" column (2304 = 2304). They will be substituted by mean values for identical 5-minute interval.
+
+```{r, echo=TRUE}
+data$steps <- ifelse(is.na(data$steps), data_intervalsummary$mean_steps, data$steps)
+head(data)
+sum(is.na(data))
+```
+
+##### Data does not contain missing values any longer
+
+```{r, echo=TRUE}
+data_stepsummary_no_NA <- dplyr::summarise(dplyr::group_by(data, date), total_steps = sum(steps), stepmeans = mean(steps), stepmedians = median(steps))
+head(data_stepsummary_no_NA)
+hist(data_stepsummary_no_NA$total_steps)
+data_stepsummary_no_NA$stepmeans - data_stepsummary$stepmeans
+data_stepsummary_no_NA$stepmedians - data_stepsummary$stepmedians
+```
+
+##### Histogram is slighly different from the one with NA data rows. Frequency of "total steps" values in a range between 10000 and 15000 is higher - this is due to NA rows replaced by mean values which end up in the center of this distribution. When NA data was imputed with mean values, it had no impact on days with no NAs (zeros in subtraction equation)
+
+##### A new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day is now created
+```{r, echo=TRUE}
+data_factor <- dplyr::mutate(data, factor = weekdays(as.Date(data$date)))
+data_factor$factor <- ifelse(data_factor$factor == "Saturday" | data_factor$factor == "Sunday", "Weekend", "Weekday")
+unique(data_factor$factor)
+```
+
+### Grouping data by 2 variables: 5-minute interval and Weekday/Weekend factor
+```{r, echo=TRUE}
+data_factor_intervalsummary <- dplyr::summarise(dplyr::group_by(data_factor, interval, factor), mean_steps = mean(steps))
+head(data_factor_intervalsummary)
+```
+### Building a panel plot for above summarized data.
+
+```{r, echo=TRUE}
+ggplot(data_factor_intervalsummary, aes(interval, mean_steps)) + geom_line() + facet_grid(.~ factor) + labs(title = "Average # of steps taken during specific 5-minute interval") + theme(plot.title = element_text(hjust = 0.5)) + labs(y = "") + labs(x = "Hour of the day (500 = 5:00am)")
+
+```
